@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.URL;
 
 /**
  * Represents the main Graphical User Interface for the Weather App.
@@ -85,10 +86,6 @@ public class WeatherAppGui extends JFrame {
         tempLabel.setForeground(TEXT_COLOR);
 
         weatherIcon = new JLabel(); // Icon will be set later
-        // Placeholder Icon
-        // The line below is commented out to prevent the crash until we add the image assets.
-        // weatherIcon.setIcon(new ImageIcon(new ImageIcon(getClass().getResource("/assets/placeholder.png")).getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH)));
-
 
         JPanel tempPanel = new JPanel();
         tempPanel.setBackground(COMPONENT_COLOR);
@@ -166,6 +163,7 @@ public class WeatherAppGui extends JFrame {
     private void fetchWeatherData(String city) {
         // Show a loading message or disable input
         cityLabel.setText("Loading...");
+        weatherIcon.setIcon(null); // Clear previous icon
 
         // Use SwingWorker to perform network I/O off the Event Dispatch Thread (EDT)
         SwingWorker<WeatherData, Void> worker = new SwingWorker<>() {
@@ -190,6 +188,7 @@ public class WeatherAppGui extends JFrame {
                         windValueLabel.setText("-- km/h");
                         humidityValueLabel.setText("--%");
                         visibilityValueLabel.setText("-- km");
+                        weatherIcon.setIcon(null);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -213,7 +212,38 @@ public class WeatherAppGui extends JFrame {
         humidityValueLabel.setText(data.getHumidity() + "%");
         // Visibility from API is in meters, convert to km
         visibilityValueLabel.setText((data.getVisibility() / 1000) + " km");
+
+        // Load the weather icon
+        ImageIcon icon = loadWeatherIcon(data.getIconCode());
+        if (icon != null) {
+            weatherIcon.setIcon(icon);
+        }
+    }
+
+    /**
+     * Loads the weather icon from the assets folder.
+     * @param iconCode The icon code from the API (e.g., "01d").
+     * @return An ImageIcon, or null if the icon cannot be found.
+     */
+    private ImageIcon loadWeatherIcon(String iconCode) {
+        // Construct the path to the icon in the resources folder
+        String path = "/assets/" + iconCode + ".png";
+        try {
+            URL resourceUrl = getClass().getResource(path);
+            if (resourceUrl == null) {
+                System.err.println("Could not find icon file: " + path);
+                return null; // Return null if the resource is not found
+            }
+            // Create an ImageIcon from the resource URL
+            ImageIcon originalIcon = new ImageIcon(resourceUrl);
+            // Scale the icon to a more appropriate size
+            Image scaledImage = originalIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+            return new ImageIcon(scaledImage);
+        } catch (Exception e) {
+            System.err.println("Error loading icon: " + path);
+            e.printStackTrace();
+            return null;
+        }
     }
 }
-
 
