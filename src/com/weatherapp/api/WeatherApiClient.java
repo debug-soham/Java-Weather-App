@@ -13,7 +13,7 @@ import java.util.Scanner;
 public class WeatherApiClient {
 
     // IMPORTANT: Replace this with your actual API key from OpenWeatherMap
-    private static final String API_KEY = "YOUR_API_KEY";
+    private static final String API_KEY = "YOUR_API_KEY_HERE";
 
     /**
      * Fetches weather data for a specified city.
