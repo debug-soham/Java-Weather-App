@@ -1,90 +1,76 @@
 package com.weatherapp.api;
 
+import com.weatherapp.model.ForecastData;
 import com.weatherapp.model.WeatherData;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Scanner;
+import java.util.List;
 
 /**
- * This class is responsible for all communication with the OpenWeatherMap API.
- * It fetches the raw weather data for a given city.
+ * Handles communication with the OpenWeatherMap API.
+ * This class is responsible for making HTTP requests to fetch weather and forecast data.
  */
 public class WeatherApiClient {
 
-    // IMPORTANT: Replace this with your actual API key from OpenWeatherMap
-    private static final String API_KEY = "YOUR_API_KEY_HERE";
+    private static final String API_KEY = "YOUR_API_KEY_HERE"; // Remember to replace this
+    private final OkHttpClient client;
+
+    public WeatherApiClient() {
+        this.client = new OkHttpClient();
+    }
 
     /**
-     * Fetches weather data for a specified city.
+     * Fetches the current weather data for a given city.
      * @param city The name of the city.
-     * @return WeatherData object containing the weather information, or null if an error occurs.
+     * @return A WeatherData object, or null if an error occurs.
      */
     public WeatherData getWeatherData(String city) {
-        // The API returns coordinates first, then we use them to get weather.
-        String geoApiUrl = "http://api.openweathermap.org/geo/1.0/direct?q=" + city + "&limit=1&appid=" + API_KEY;
-
+        String url = "https://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + API_KEY + "&units=metric";
         try {
-            // First, get latitude and longitude for the city
-            String geoResponse = makeApiRequest(geoApiUrl);
-            if (geoResponse == null) return null;
-
-            // Parse coordinates from the response (this part is simplified for clarity)
-            // A more robust implementation would use a JSON library here as well.
-            // For now, we are assuming the first result is correct.
-            org.json.simple.parser.JSONParser parser = new org.json.simple.parser.JSONParser();
-            org.json.simple.JSONArray geoArray = (org.json.simple.JSONArray) parser.parse(geoResponse);
-
-            if (geoArray.isEmpty()) {
-                System.out.println("Could not find coordinates for city: " + city);
-                return null;
+            String json = makeApiCall(url);
+            if (json != null) {
+                return JsonParser.parseWeatherData(json);
             }
-
-            org.json.simple.JSONObject geoData = (org.json.simple.JSONObject) geoArray.get(0);
-            double lat = (Double) geoData.get("lat");
-            double lon = (Double) geoData.get("lon");
-
-            // Now, get the weather data using the coordinates
-            String weatherApiUrl = "http://api.openweathermap.org/data/2.5/weather?lat=" + lat + "&lon=" + lon + "&appid=" + API_KEY + "&units=metric";
-
-            String weatherResponse = makeApiRequest(weatherApiUrl);
-            if (weatherResponse == null) return null;
-
-            // Parse the detailed weather JSON response
-            return JsonParser.parseWeatherData(weatherResponse);
-
-        } catch (Exception e) {
-            System.err.println("An error occurred during API request: " + e.getMessage());
+        } catch (IOException e) {
             e.printStackTrace();
-            return null;
         }
+        return null;
     }
 
     /**
-     * Helper method to make an HTTP GET request to a given URL.
-     * @param urlString The URL to request.
-     * @return The response body as a String, or null if the request fails.
+     * Fetches the 5-day weather forecast for a given city.
+     * @param city The name of the city.
+     * @return A list of ForecastData objects, or null if an error occurs.
      */
-    private String makeApiRequest(String urlString) throws IOException {
-        URL url = new URL(urlString);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.connect();
-
-        int responseCode = conn.getResponseCode();
-
-        if (responseCode != 200) {
-            System.err.println("API Request Failed with response code: " + responseCode + " for URL: " + urlString);
-            return null;
-        } else {
-            // Read the response body
-            StringBuilder responseBody = new StringBuilder();
-            Scanner scanner = new Scanner(url.openStream());
-            while (scanner.hasNext()) {
-                responseBody.append(scanner.nextLine());
+    public List<ForecastData> getForecastData(String city) {
+        String url = "https://api.openweathermap.org/data/2.5/forecast?q=" + city + "&appid=" + API_KEY + "&units=metric";
+        try {
+            String json = makeApiCall(url);
+            if (json != null) {
+                return JsonParser.parseForecastData(json);
             }
-            scanner.close();
-            return responseBody.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        return null;
+    }
+
+    /**
+     * A generic method to make an API call using OkHttp.
+     * @param url The URL for the API request.
+     * @return The JSON response as a string, or null on failure.
+     * @throws IOException if a network error occurs.
+     */
+    private String makeApiCall(String url) throws IOException {
+        Request request = new Request.Builder().url(url).build();
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                return response.body().string();
+            }
+        }
+        return null;
     }
 }
+
