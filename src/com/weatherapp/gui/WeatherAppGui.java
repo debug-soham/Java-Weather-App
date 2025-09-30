@@ -2,40 +2,40 @@ package com.weatherapp.gui;
 
 import com.weatherapp.api.WeatherApiClient;
 import com.weatherapp.model.WeatherData;
+import com.weatherapp.util.FontLoader; // Import the new utility class
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.net.URL;
+import java.util.Locale;
 
 /**
  * Represents the main Graphical User Interface for the Weather App.
- * This class sets up the main frame and all the UI components,
- * and handles the event listening for user interactions.
  */
 public class WeatherAppGui extends JFrame {
 
-    // Define colors for the dark theme, inspired by the reference UI
+    // Define colors for the dark theme
     private static final Color BACKGROUND_COLOR = new Color(0x1F1F1F);
     private static final Color COMPONENT_COLOR = new Color(0x2B2B2B);
     private static final Color TEXT_COLOR = new Color(0xE0E0E0);
-    private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 16);
-    private static final Font BOLD_FONT = new Font("Segoe UI", Font.BOLD, 16);
 
-    // Weather client for API calls
+    // Define the new font family name
+    private static final String FONT_FAMILY = "Montserrat";
+
+    // Define fonts using the new font family
+    private static final Font MAIN_FONT = new Font(FONT_FAMILY, Font.PLAIN, 16);
+    private static final Font BOLD_FONT = new Font(FONT_FAMILY, Font.BOLD, 16);
+
     private final WeatherApiClient weatherApiClient;
-
-    // UI components that need to be updated with weather data
-    private JLabel cityLabel;
-    private JLabel tempLabel;
-    private JLabel weatherIcon;
-    private JLabel windValueLabel;
-    private JLabel humidityValueLabel;
-    private JLabel visibilityValueLabel;
+    private JLabel cityLabel, tempLabel, weatherIcon, weatherDescLabel;
+    private JLabel windValueLabel, humidityValueLabel, visibilityValueLabel;
 
     public WeatherAppGui() {
         super("Weather Information App");
+
+        // Load custom fonts before creating any UI components
+        FontLoader.loadFonts();
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(850, 650);
         setLocationRelativeTo(null);
@@ -43,12 +43,10 @@ public class WeatherAppGui extends JFrame {
         getContentPane().setBackground(BACKGROUND_COLOR);
 
         weatherApiClient = new WeatherApiClient();
-
         createUI();
     }
 
     private void createUI() {
-        // --- Header Panel with Search ---
         JTextField searchField = new JTextField();
         searchField.setFont(MAIN_FONT);
         searchField.setForeground(TEXT_COLOR);
@@ -65,46 +63,53 @@ public class WeatherAppGui extends JFrame {
         headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         add(headerPanel, BorderLayout.NORTH);
 
-        // --- Main Content Panel ---
         JPanel mainContentPanel = new JPanel(new BorderLayout());
         mainContentPanel.setBackground(BACKGROUND_COLOR);
         mainContentPanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 15, 15));
         add(mainContentPanel, BorderLayout.CENTER);
 
-        // --- Today's Weather Panel ---
         JPanel todayPanel = new JPanel(new BorderLayout());
         todayPanel.setBackground(COMPONENT_COLOR);
         todayPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         cityLabel = new JLabel("Enter a City");
-        cityLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        cityLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 24));
         cityLabel.setForeground(TEXT_COLOR);
+        cityLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         tempLabel = new JLabel("--°C");
-        tempLabel.setFont(new Font("Segoe UI", Font.BOLD, 64));
+        tempLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 64));
         tempLabel.setForeground(TEXT_COLOR);
+        tempLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         weatherIcon = new JLabel();
+        weatherIcon.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JPanel tempPanel = new JPanel();
-        tempPanel.setBackground(COMPONENT_COLOR);
-        tempPanel.add(tempLabel);
-        tempPanel.add(weatherIcon);
+        weatherDescLabel = new JLabel(" ");
+        weatherDescLabel.setFont(new Font(FONT_FAMILY, Font.PLAIN, 20));
+        weatherDescLabel.setForeground(TEXT_COLOR);
+        weatherDescLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JPanel tempIconPanel = new JPanel();
+        tempIconPanel.setBackground(COMPONENT_COLOR);
+        tempIconPanel.add(tempLabel);
+        tempIconPanel.add(weatherIcon);
+
+        JPanel centerContentPanel = new JPanel(new BorderLayout());
+        centerContentPanel.setBackground(COMPONENT_COLOR);
+        centerContentPanel.add(tempIconPanel, BorderLayout.NORTH);
+        centerContentPanel.add(weatherDescLabel, BorderLayout.SOUTH);
 
         todayPanel.add(cityLabel, BorderLayout.NORTH);
-        todayPanel.add(tempPanel, BorderLayout.CENTER);
+        todayPanel.add(centerContentPanel, BorderLayout.CENTER);
 
         mainContentPanel.add(todayPanel, BorderLayout.NORTH);
 
-        // --- Overview Panel ---
-        // Changed GridLayout to have 3 columns instead of 4
         JPanel overviewContainer = new JPanel(new GridLayout(1, 3, 15, 0));
         overviewContainer.setBackground(BACKGROUND_COLOR);
         overviewContainer.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEmptyBorder(20, 0, 0, 0),
-                "Today's Overview",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
+                BorderFactory.createEmptyBorder(20, 0, 0, 0), "Today's Overview",
+                javax.swing.border.TitledBorder.LEFT, javax.swing.border.TitledBorder.TOP,
                 BOLD_FONT, TEXT_COLOR
         ));
 
@@ -118,14 +123,7 @@ public class WeatherAppGui extends JFrame {
 
         mainContentPanel.add(overviewContainer, BorderLayout.CENTER);
 
-        // --- Add Action Listener to the Search Field ---
-        searchField.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String city = searchField.getText();
-                fetchWeatherData(city);
-            }
-        });
+        searchField.addActionListener(e -> fetchWeatherData(searchField.getText()));
     }
 
     private JPanel createDetailPanel(String title, JLabel valueLabel) {
@@ -136,9 +134,11 @@ public class WeatherAppGui extends JFrame {
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(MAIN_FONT);
         titleLabel.setForeground(TEXT_COLOR.darker());
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        valueLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 22));
         valueLabel.setForeground(TEXT_COLOR);
+        valueLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         panel.add(titleLabel, BorderLayout.NORTH);
         panel.add(valueLabel, BorderLayout.CENTER);
@@ -147,8 +147,10 @@ public class WeatherAppGui extends JFrame {
     }
 
     private void fetchWeatherData(String city) {
+        if (city == null || city.trim().isEmpty()) return;
         cityLabel.setText("Loading...");
         weatherIcon.setIcon(null);
+        weatherDescLabel.setText(" ");
 
         SwingWorker<WeatherData, Void> worker = new SwingWorker<>() {
             @Override
@@ -165,6 +167,7 @@ public class WeatherAppGui extends JFrame {
                     } else {
                         cityLabel.setText("City not found");
                         tempLabel.setText("--°C");
+                        weatherDescLabel.setText(" ");
                         windValueLabel.setText("-- km/h");
                         humidityValueLabel.setText("--%");
                         visibilityValueLabel.setText("-- km");
@@ -180,16 +183,25 @@ public class WeatherAppGui extends JFrame {
     }
 
     private void updateUI(String city, WeatherData data) {
-        cityLabel.setText(city.substring(0, 1).toUpperCase() + city.substring(1));
+        cityLabel.setText(capitalize(city));
         tempLabel.setText(String.format("%.0f°C", data.getTemperature()));
+        weatherDescLabel.setText(capitalize(data.getWeatherDescription()));
         windValueLabel.setText(String.format("%.2f km/h", data.getWindSpeed()));
         humidityValueLabel.setText(data.getHumidity() + "%");
         visibilityValueLabel.setText((data.getVisibility() / 1000) + " km");
+        weatherIcon.setIcon(loadWeatherIcon(data.getIconCode()));
+    }
 
-        ImageIcon icon = loadWeatherIcon(data.getIconCode());
-        if (icon != null) {
-            weatherIcon.setIcon(icon);
+    private String capitalize(String text) {
+        if (text == null || text.isEmpty()) return text;
+        String[] words = text.split(" ");
+        StringBuilder capitalized = new StringBuilder();
+        for (String word : words) {
+            capitalized.append(Character.toUpperCase(word.charAt(0)))
+                    .append(word.substring(1).toLowerCase(Locale.ROOT))
+                    .append(" ");
         }
+        return capitalized.toString().trim();
     }
 
     private ImageIcon loadWeatherIcon(String iconCode) {
