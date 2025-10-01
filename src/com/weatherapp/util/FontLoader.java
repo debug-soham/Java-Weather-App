@@ -1,40 +1,39 @@
 package com.weatherapp.util;
 
 import java.awt.Font;
+import java.awt.FontFormatException;
 import java.awt.GraphicsEnvironment;
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
  * A utility class to load and register custom fonts from the project's resources.
- * This ensures that the custom font is available to the entire Swing application.
  */
 public class FontLoader {
 
     /**
-     * Loads and registers the Montserrat font (Regular and Bold styles).
-     * If the font fails to load, it prints an error message but does not crash the app,
-     * allowing the UI to fall back to a default system font.
+     * Loads a custom font from the specified path within the resources.
+     * @param path The resource path to the .ttf font file.
+     * @return The loaded Font object, or a fallback font if loading fails.
      */
-    public static void loadFonts() {
+    public static Font loadFont(String path, float size) {
         try {
-            // Load the regular and bold font files from the resources/fonts folder
-            InputStream regularStream = FontLoader.class.getResourceAsStream("/fonts/Montserrat-Regular.ttf");
-            InputStream boldStream = FontLoader.class.getResourceAsStream("/fonts/Montserrat-Bold.ttf");
-
-            if (regularStream != null && boldStream != null) {
-                Font montserratRegular = Font.createFont(Font.TRUETYPE_FONT, regularStream);
-                Font montserratBold = Font.createFont(Font.TRUETYPE_FONT, boldStream);
-
-                // Register the fonts with the system's GraphicsEnvironment
-                GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-                ge.registerFont(montserratRegular);
-                ge.registerFont(montserratBold);
-            } else {
-                System.err.println("Could not find font files in resources.");
+            // Get the font file as a stream from the resources folder
+            InputStream fontStream = FontLoader.class.getResourceAsStream(path);
+            if (fontStream == null) {
+                System.err.println("Font not found at path: " + path);
+                return new Font("Dialog", Font.PLAIN, (int) size);
             }
-        } catch (Exception e) {
-            System.err.println("Error loading custom fonts.");
-            e.printStackTrace();
+            // Create the font and register it with the graphics environment
+            Font customFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(size);
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(customFont);
+            return customFont;
+        } catch (IOException | FontFormatException e) {
+            System.err.println("Error loading font: " + e.getMessage());
+            // Return a default font in case of error
+            return new Font("Dialog", Font.PLAIN, (int) size);
         }
     }
 }
+

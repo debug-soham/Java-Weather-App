@@ -1,20 +1,20 @@
 package com.weatherapp.api;
 
-import com.weatherapp.model.ForecastData;
-import com.weatherapp.model.WeatherData;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import java.io.IOException;
-import java.util.List;
 
 /**
- * Handles communication with the OpenWeatherMap API.
- * This class is responsible for making HTTP requests to fetch weather and forecast data.
+ * A client to communicate with the OpenWeatherMap API.
+ * This class is responsible for fetching weather data from the web.
  */
 public class WeatherApiClient {
-
-    private static final String API_KEY = "YOUR_API_KEY_HERE"; // Remember to replace this
+    // IMPORTANT: Replace with your actual API key from OpenWeatherMap
+    private static final String API_KEY = "YOUR_API_KEY_HERE";
     private final OkHttpClient client;
 
     public WeatherApiClient() {
@@ -22,55 +22,49 @@ public class WeatherApiClient {
     }
 
     /**
-     * Fetches the current weather data for a given city.
-     * @param city The name of the city.
-     * @return A WeatherData object, or null if an error occurs.
+     * Fetches the current weather data for a given city name.
+     * @param cityName The name of the city.
+     * @return A JSONObject containing the current weather data, or null if an error occurs.
      */
-    public WeatherData getWeatherData(String city) {
-        String url = "https://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + API_KEY + "&units=metric";
-        try {
-            String json = makeApiCall(url);
-            if (json != null) {
-                return JsonParser.parseWeatherData(json);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public JSONObject getCurrentWeather(String cityName) {
+        String url = "https://api.openweathermap.org/data/2.5/weather?q=" + cityName + "&appid=" + API_KEY + "&units=metric";
+        return executeApiCall(url);
     }
 
     /**
-     * Fetches the 5-day weather forecast for a given city.
-     * @param city The name of the city.
-     * @return A list of ForecastData objects, or null if an error occurs.
+     * Fetches the 5-day weather forecast for a given city name.
+     * @param cityName The name of the city.
+     * @return A JSONObject containing the forecast data, or null if an error occurs.
      */
-    public List<ForecastData> getForecastData(String city) {
-        String url = "https://api.openweathermap.org/data/2.5/forecast?q=" + city + "&appid=" + API_KEY + "&units=metric";
-        try {
-            String json = makeApiCall(url);
-            if (json != null) {
-                return JsonParser.parseForecastData(json);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public JSONObject getFiveDayForecast(String cityName) {
+        String url = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityName + "&appid=" + API_KEY + "&units=metric";
+        return executeApiCall(url);
     }
 
     /**
-     * A generic method to make an API call using OkHttp.
-     * @param url The URL for the API request.
-     * @return The JSON response as a string, or null on failure.
-     * @throws IOException if a network error occurs.
+     * Executes the API call using OkHttp.
+     * @param urlString The URL to call.
+     * @return A JSONObject with the response, or null on failure.
      */
-    private String makeApiCall(String url) throws IOException {
-        Request request = new Request.Builder().url(url).build();
+    private JSONObject executeApiCall(String urlString) {
+        Request request = new Request.Builder()
+                .url(urlString)
+                .build();
+
         try (Response response = client.newCall(request).execute()) {
-            if (response.isSuccessful() && response.body() != null) {
-                return response.body().string();
+            if (!response.isSuccessful()) {
+                System.err.println("API Call Unsuccessful: " + response);
+                return null;
             }
+            JSONParser parser = new JSONParser();
+            return (JSONObject) parser.parse(response.body().string());
+        } catch (IOException e) {
+            System.err.println("IOException during API call: " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            System.err.println("Error parsing JSON response: " + e.getMessage());
+            return null;
         }
-        return null;
     }
 }
 

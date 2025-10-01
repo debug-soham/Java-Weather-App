@@ -4,99 +4,82 @@ import com.weatherapp.model.ForecastData;
 import com.weatherapp.model.WeatherData;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A utility class responsible for parsing JSON responses from the OpenWeatherMap API.
+ * A utility class to parse JSON responses from the OpenWeatherMap API.
  */
 public class JsonParser {
 
     /**
-     * Parses the JSON string for current weather into a WeatherData object.
-     * @param json The JSON string response from the API.
+     * Parses the JSON response for current weather into a WeatherData object.
+     * @param jsonResponse The JSONObject containing the current weather data.
      * @return A WeatherData object, or null if parsing fails.
      */
-    public static WeatherData parseWeatherData(String json) {
+    public static WeatherData parseCurrentWeather(JSONObject jsonResponse) {
+        if (jsonResponse == null) return null;
+
         try {
-            // ... (existing code for parsing current weather - no changes needed here) ...
-            JSONParser parser = new JSONParser();
-            JSONObject jsonObject = (JSONObject) parser.parse(json);
-
-            JSONObject main = (JSONObject) jsonObject.get("main");
-            double temp = (double) main.get("temp");
-            long humidity = (long) main.get("humidity");
-
-            JSONObject wind = (JSONObject) jsonObject.get("wind");
-            double windSpeed = (double) wind.get("speed");
-
-            long visibility = (long) jsonObject.get("visibility");
-
-            JSONArray weatherArray = (JSONArray) jsonObject.get("weather");
+            WeatherData data = new WeatherData();
+            JSONObject main = (JSONObject) jsonResponse.get("main");
+            JSONObject wind = (JSONObject) jsonResponse.get("wind");
+            JSONObject sys = (JSONObject) jsonResponse.get("sys");
+            JSONArray weatherArray = (JSONArray) jsonResponse.get("weather");
             JSONObject weather = (JSONObject) weatherArray.get(0);
-            String iconCode = (String) weather.get("icon");
-            String weatherDescription = (String) weather.get("description");
 
-            WeatherData weatherData = new WeatherData();
-            weatherData.setTemperature(temp);
-            weatherData.setHumidity((int) humidity);
-            weatherData.setWindSpeed(windSpeed);
-            weatherData.setVisibility(visibility);
-            weatherData.setIconCode(iconCode);
-            weatherData.setWeatherDescription(weatherDescription);
+            data.setTemperature((Double) main.get("temp"));
+            data.setHumidity((Long) main.get("humidity"));
+            data.setWindSpeed((Double) wind.get("speed"));
+            data.setDescription((String) weather.get("description"));
+            data.setSunrise((Long) sys.get("sunrise"));
+            data.setSunset((Long) sys.get("sunset"));
+            data.setIconCode((String) weather.get("icon"));
 
-            return weatherData;
+            return data;
         } catch (Exception e) {
             System.err.println("Error parsing current weather JSON: " + e.getMessage());
-            e.printStackTrace();
             return null;
         }
     }
 
     /**
-     * Parses the JSON string for 5-day forecast into a list of ForecastData objects.
-     * It selects one forecast per day, aiming for the midday (12:00) data point.
-     * @param json The JSON string response from the API.
-     * @return A list of ForecastData objects, one for each of the next 5 days.
+     * Parses the JSON response for a 5-day forecast into a list of ForecastData objects.
+     * @param jsonResponse The JSONObject containing the forecast data.
+     * @return A List of ForecastData objects, or an empty list if parsing fails.
      */
-    public static List<ForecastData> parseForecastData(String json) {
+    public static List<ForecastData> parseFiveDayForecast(JSONObject jsonResponse) {
         List<ForecastData> forecastList = new ArrayList<>();
+        if (jsonResponse == null) return forecastList;
+
         try {
-            JSONParser parser = new JSONParser();
-            JSONObject jsonObject = (JSONObject) parser.parse(json);
-            JSONArray list = (JSONArray) jsonObject.get("list");
+            JSONArray list = (JSONArray) jsonResponse.get("list");
+            DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("EEE");
 
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-            for (int i = 0; i < list.size(); i++) {
+            // The API returns data every 3 hours. We'll pick one entry per day (e.g., at noon).
+            for (int i = 7; i < list.size(); i += 8) {
                 JSONObject forecast = (JSONObject) list.get(i);
-                String dt_txt = (String) forecast.get("dt_txt");
+                long dt = (Long) forecast.get("dt");
+                LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(dt), ZoneId.systemDefault());
 
-                // We only want one forecast per day, let's pick the one at 12:00:00
-                if (dt_txt.contains("12:00:00")) {
-                    LocalDateTime dateTime = LocalDateTime.parse(dt_txt, formatter);
-                    String dayOfWeek = dateTime.getDayOfWeek().toString().substring(0, 3); // "MON", "TUE", etc.
+                JSONObject main = (JSONObject) forecast.get("main");
+                double temp = (Double) main.get("temp");
 
-                    JSONObject main = (JSONObject) forecast.get("main");
-                    double temp = (double) main.get("temp");
+                JSONArray weatherArray = (JSONArray) forecast.get("weather");
+                JSONObject weather = (JSONObject) weatherArray.get(0);
+                String iconCode = (String) weather.get("icon");
 
-                    JSONArray weatherArray = (JSONArray) forecast.get("weather");
-                    JSONObject weather = (JSONObject) weatherArray.get(0);
-                    String iconCode = (String) weather.get("icon");
-
-                    forecastList.add(new ForecastData(dayOfWeek, temp, iconCode));
-                }
+                // THIS IS THE FIX: Pass the raw iconCode, not the full path.
+                forecastList.add(new ForecastData(dateTime.format(dayFormatter), temp, iconCode));
             }
-            return forecastList;
         } catch (Exception e) {
             System.err.println("Error parsing forecast JSON: " + e.getMessage());
-            e.printStackTrace();
-            return null;
         }
+        return forecastList;
     }
 }
 

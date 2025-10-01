@@ -1,18 +1,17 @@
 package com.weatherapp.model;
 
 /**
- * A Plain Old Java Object (POJO) to represent the weather data for a specific location.
- * This class encapsulates all the relevant weather information fetched from the API.
+ * A data model class that holds the current weather information.
+ * This class acts as a Plain Old Java Object (POJO) to store data retrieved from the API.
  */
 public class WeatherData {
     private double temperature;
-    private int humidity;
+    private long humidity;
     private double windSpeed;
-    private long visibility;
-    private String iconCode;
-    private String weatherDescription; // New field for the description
-
-    // Getters and Setters for all fields
+    private String description;
+    private long sunrise;
+    private long sunset;
+    private String iconCode; // New field for the icon
 
     public double getTemperature() {
         return temperature;
@@ -22,11 +21,11 @@ public class WeatherData {
         this.temperature = temperature;
     }
 
-    public int getHumidity() {
+    public long getHumidity() {
         return humidity;
     }
 
-    public void setHumidity(int humidity) {
+    public void setHumidity(long humidity) {
         this.humidity = humidity;
     }
 
@@ -38,12 +37,28 @@ public class WeatherData {
         this.windSpeed = windSpeed;
     }
 
-    public long getVisibility() {
-        return visibility;
+    public String getDescription() {
+        return description;
     }
 
-    public void setVisibility(long visibility) {
-        this.visibility = visibility;
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public long getSunrise() {
+        return sunrise;
+    }
+
+    public void setSunrise(long sunrise) {
+        this.sunrise = sunrise;
+    }
+
+    public long getSunset() {
+        return sunset;
+    }
+
+    public void setSunset(long sunset) {
+        this.sunset = sunset;
     }
 
     public String getIconCode() {
@@ -52,14 +67,6 @@ public class WeatherData {
 
     public void setIconCode(String iconCode) {
         this.iconCode = iconCode;
-    }
-
-    public String getWeatherDescription() {
-        return weatherDescription;
-    }
-
-    public void setWeatherDescription(String weatherDescription) {
-        this.weatherDescription = weatherDescription;
     }
 }
 

@@ -1,279 +1,267 @@
 package com.weatherapp.gui;
 
+import com.weatherapp.api.JsonParser;
 import com.weatherapp.api.WeatherApiClient;
 import com.weatherapp.model.ForecastData;
 import com.weatherapp.model.WeatherData;
 import com.weatherapp.util.FontLoader;
+import org.json.simple.JSONObject;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
-import java.net.URL;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
 /**
- * Represents the main Graphical User Interface for the Weather App.
+ * The main graphical user interface for the Weather Information App.
+ * This class is responsible for building and managing all UI components with an aesthetic landscape layout.
  */
 public class WeatherAppGui extends JFrame {
 
-    // Define colors and fonts
+    // Define colors for the dark theme
     private static final Color BACKGROUND_COLOR = new Color(0x1F1F1F);
     private static final Color COMPONENT_COLOR = new Color(0x2B2B2B);
-    private static final Color TEXT_COLOR = new Color(0xE0E0E0);
-    private static final String FONT_FAMILY = "Montserrat";
-    private static final Font MAIN_FONT = new Font(FONT_FAMILY, Font.PLAIN, 16);
-    private static final Font BOLD_FONT = new Font(FONT_FAMILY, Font.BOLD, 16);
+    private static final Color TEXT_COLOR = new Color(0xF0F0F0);
 
-    private final WeatherApiClient weatherApiClient;
+    // Declare fonts using the custom FontLoader
+    private static final Font FONT_BOLD_48 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 48f);
+    private static final Font FONT_BOLD_24 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 24f);
+    private static final Font FONT_BOLD_20 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 20f);
+    private static final Font FONT_REGULAR_18 = FontLoader.loadFont("/fonts/Montserrat-Regular.ttf", 18f);
+    private static final Font FONT_REGULAR_16 = FontLoader.loadFont("/fonts/Montserrat-Regular.ttf", 16f);
+    private static final Font FONT_REGULAR_14 = FontLoader.loadFont("/fonts/Montserrat-Regular.ttf", 14f);
 
-    // UI components for current weather
-    private JLabel cityLabel, tempLabel, weatherIcon, weatherDescLabel;
-    private JLabel windValueLabel, humidityValueLabel, visibilityValueLabel;
 
-    // UI component for the forecast panel
+    // API client
+    private final WeatherApiClient apiClient;
+
+    // UI components that need to be updated
+    private JLabel cityLabel, tempLabel, weatherIcon, descriptionLabel;
+    private JLabel windValueLabel, humidityValueLabel, sunriseValueLabel, sunsetValueLabel;
     private JPanel forecastPanel;
 
     public WeatherAppGui() {
-        super("Weather Information App");
-        FontLoader.loadFonts();
+        this.apiClient = new WeatherApiClient();
 
+        setTitle("Weather Information App");
+        setSize(1000, 600); // Increased height for better spacing
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(850, 750); // Increased height for forecast panel
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
+        setResizable(false);
         getContentPane().setBackground(BACKGROUND_COLOR);
 
-        weatherApiClient = new WeatherApiClient();
         createUI();
     }
 
     private void createUI() {
-        // ... (Header Panel with Search - no changes) ...
-        JTextField searchField = new JTextField();
-        searchField.setFont(MAIN_FONT);
-        searchField.setForeground(TEXT_COLOR);
-        searchField.setBackground(COMPONENT_COLOR);
-        searchField.setCaretColor(TEXT_COLOR);
-        searchField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(0x4a4a4a)),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(BACKGROUND_COLOR);
-        headerPanel.add(searchField, BorderLayout.CENTER);
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        add(headerPanel, BorderLayout.NORTH);
+        // Main panel with BorderLayout
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(BACKGROUND_COLOR);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20)); // Adjusted bottom padding
+        add(mainPanel);
 
-        // --- Main Content Panel ---
-        JPanel mainContentPanel = new JPanel();
-        mainContentPanel.setLayout(new BoxLayout(mainContentPanel, BoxLayout.Y_AXIS));
-        mainContentPanel.setBackground(BACKGROUND_COLOR);
-        mainContentPanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 15, 15));
-        add(mainContentPanel, BorderLayout.CENTER);
+        // -- Search Panel (Top) --
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        searchPanel.setBackground(BACKGROUND_COLOR);
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
 
-        // ... (Today's Weather Panel - no changes) ...
-        JPanel todayPanel = new JPanel(new BorderLayout());
-        todayPanel.setBackground(COMPONENT_COLOR);
-        todayPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        cityLabel = new JLabel("Enter a City");
-        cityLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 24));
+        JTextField searchField = new JTextField("Search City");
+        searchField.setFont(FONT_REGULAR_16);
+        searchField.setPreferredSize(new Dimension(350, 40));
+        searchField.addActionListener(e -> updateWeatherData(searchField.getText()));
+        searchPanel.add(searchField);
+        mainPanel.add(searchPanel, BorderLayout.NORTH);
+
+        // -- Center Content Panel (holds top and bottom sections) --
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.setBackground(BACKGROUND_COLOR);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+
+        // -- Top Content Panel (Current Weather + Highlights) --
+        JPanel topContentPanel = new JPanel(new GridLayout(1, 2, 25, 0));
+        topContentPanel.setBackground(BACKGROUND_COLOR);
+        topContentPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+
+        // -- Current Weather Panel (Left Side) --
+        // Reworked with BoxLayout for reliable vertical stacking and centering
+        JPanel currentWeatherPanel = new JPanel();
+        currentWeatherPanel.setLayout(new BoxLayout(currentWeatherPanel, BoxLayout.Y_AXIS));
+        currentWeatherPanel.setBackground(BACKGROUND_COLOR);
+
+        cityLabel = new JLabel("City Name");
+        cityLabel.setFont(FONT_BOLD_24);
         cityLabel.setForeground(TEXT_COLOR);
-        cityLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        cityLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Panel to hold temperature and icon side-by-side
+        JPanel tempIconPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
+        tempIconPanel.setBackground(BACKGROUND_COLOR);
+
         tempLabel = new JLabel("--°C");
-        tempLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 64));
+        tempLabel.setFont(FONT_BOLD_48);
         tempLabel.setForeground(TEXT_COLOR);
-        tempLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
         weatherIcon = new JLabel();
-        weatherIcon.setHorizontalAlignment(SwingConstants.CENTER);
-        weatherDescLabel = new JLabel(" ");
-        weatherDescLabel.setFont(new Font(FONT_FAMILY, Font.PLAIN, 20));
-        weatherDescLabel.setForeground(TEXT_COLOR);
-        weatherDescLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        JPanel tempIconPanel = new JPanel();
-        tempIconPanel.setBackground(COMPONENT_COLOR);
+
         tempIconPanel.add(tempLabel);
         tempIconPanel.add(weatherIcon);
-        JPanel centerContentPanel = new JPanel(new BorderLayout());
-        centerContentPanel.setBackground(COMPONENT_COLOR);
-        centerContentPanel.add(tempIconPanel, BorderLayout.NORTH);
-        centerContentPanel.add(weatherDescLabel, BorderLayout.SOUTH);
-        todayPanel.add(cityLabel, BorderLayout.NORTH);
-        todayPanel.add(centerContentPanel, BorderLayout.CENTER);
 
-        // ... (Overview Panel - no changes) ...
-        JPanel overviewContainer = new JPanel(new GridLayout(1, 3, 15, 0));
-        overviewContainer.setBackground(BACKGROUND_COLOR);
-        overviewContainer.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEmptyBorder(20, 0, 0, 0), "Today's Overview",
-                javax.swing.border.TitledBorder.LEFT, javax.swing.border.TitledBorder.TOP,
-                BOLD_FONT, TEXT_COLOR
-        ));
+        descriptionLabel = new JLabel("Weather Description");
+        descriptionLabel.setFont(FONT_REGULAR_18);
+        descriptionLabel.setForeground(TEXT_COLOR);
+        descriptionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Add components with vertical glue for proper centering
+        currentWeatherPanel.add(Box.createVerticalGlue());
+        currentWeatherPanel.add(cityLabel);
+        currentWeatherPanel.add(Box.createVerticalStrut(15));
+        currentWeatherPanel.add(tempIconPanel);
+        currentWeatherPanel.add(Box.createVerticalStrut(15));
+        currentWeatherPanel.add(descriptionLabel);
+        currentWeatherPanel.add(Box.createVerticalGlue());
+
+        // -- Today's Highlights Panel (Right Side) --
+        JPanel highlightsPanel = new JPanel(new GridLayout(2, 2, 15, 15));
+        highlightsPanel.setBackground(BACKGROUND_COLOR);
+        Border highlightsTitle = BorderFactory.createTitledBorder(
+                BorderFactory.createEmptyBorder(), "Today's Highlights",
+                0, 0, FONT_REGULAR_16, TEXT_COLOR);
+        highlightsPanel.setBorder(BorderFactory.createCompoundBorder(highlightsTitle,
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)));
+
+
         windValueLabel = new JLabel("-- km/h");
-        humidityValueLabel = new JLabel("--%");
-        visibilityValueLabel = new JLabel("-- km");
-        overviewContainer.add(createDetailPanel("Wind Status", windValueLabel));
-        overviewContainer.add(createDetailPanel("Humidity", humidityValueLabel));
-        overviewContainer.add(createDetailPanel("Visibility", visibilityValueLabel));
+        highlightsPanel.add(createHighlightPanel("Wind Status", windValueLabel));
 
-        // --- Forecast Panel ---
-        forecastPanel = new JPanel(new GridLayout(1, 5, 15, 0));
+        humidityValueLabel = new JLabel("-- %");
+        highlightsPanel.add(createHighlightPanel("Humidity", humidityValueLabel));
+
+        sunriseValueLabel = new JLabel("--:-- AM");
+        highlightsPanel.add(createHighlightPanel("Sunrise", sunriseValueLabel));
+
+        sunsetValueLabel = new JLabel("--:-- PM");
+        highlightsPanel.add(createHighlightPanel("Sunset", sunsetValueLabel));
+
+        topContentPanel.add(currentWeatherPanel);
+        topContentPanel.add(highlightsPanel);
+
+        centerPanel.add(topContentPanel);
+
+        // -- Forecast Panel (Bottom) --
+        forecastPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         forecastPanel.setBackground(BACKGROUND_COLOR);
-        forecastPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 10, 0));
+        Border forecastTitle = BorderFactory.createTitledBorder(
+                BorderFactory.createEmptyBorder(), "5-Day Forecast",
+                0, 0, FONT_REGULAR_16, TEXT_COLOR);
+        forecastPanel.setBorder(BorderFactory.createCompoundBorder(forecastTitle,
+                BorderFactory.createEmptyBorder(10, 0, 10, 0)));
 
-        mainContentPanel.add(todayPanel);
-        mainContentPanel.add(overviewContainer);
-        mainContentPanel.add(forecastPanel);
-
-        searchField.addActionListener(e -> fetchWeatherData(searchField.getText()));
+        centerPanel.add(forecastPanel);
     }
 
-    private JPanel createDetailPanel(String title, JLabel valueLabel) {
-        // ... (no changes in this method) ...
-        JPanel panel = new JPanel(new BorderLayout());
+    private JPanel createHighlightPanel(String title, JLabel valueLabel) {
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(COMPONENT_COLOR);
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        GridBagConstraints pGbc = new GridBagConstraints();
+        pGbc.gridx = 0;
+        pGbc.anchor = GridBagConstraints.CENTER;
+        pGbc.insets = new Insets(10, 5, 10, 5);
+
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(MAIN_FONT);
-        titleLabel.setForeground(TEXT_COLOR.darker());
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        valueLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 22));
+        titleLabel.setFont(FONT_REGULAR_14);
+        titleLabel.setForeground(TEXT_COLOR);
+        pGbc.gridy = 0;
+        panel.add(titleLabel, pGbc);
+
+        valueLabel.setFont(FONT_BOLD_20);
         valueLabel.setForeground(TEXT_COLOR);
-        valueLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        panel.add(titleLabel, BorderLayout.NORTH);
-        panel.add(valueLabel, BorderLayout.CENTER);
+        pGbc.gridy = 1;
+        pGbc.insets = new Insets(5, 5, 10, 5);
+        panel.add(valueLabel, pGbc);
+
         return panel;
     }
 
-    private void fetchWeatherData(String city) {
-        if (city == null || city.trim().isEmpty()) return;
+    private void updateWeatherData(String cityName) {
+        JSONObject currentWeatherDataJson = apiClient.getCurrentWeather(cityName);
+        WeatherData currentWeatherData = JsonParser.parseCurrentWeather(currentWeatherDataJson);
 
-        // Reset UI to loading state
-        cityLabel.setText("Loading...");
-        weatherIcon.setIcon(null);
-        weatherDescLabel.setText(" ");
-        forecastPanel.removeAll(); // Clear old forecast
+        if (currentWeatherData != null) {
+            cityLabel.setText(cityName);
+            tempLabel.setText(String.format("%.0f°C", currentWeatherData.getTemperature()));
+            descriptionLabel.setText(currentWeatherData.getDescription());
+            windValueLabel.setText(String.format("%.2f km/h", currentWeatherData.getWindSpeed()));
+            humidityValueLabel.setText(currentWeatherData.getHumidity() + " %");
+            sunriseValueLabel.setText(convertTimestampToTime(currentWeatherData.getSunrise()));
+            sunsetValueLabel.setText(convertTimestampToTime(currentWeatherData.getSunset()));
+            loadWeatherIcon(weatherIcon, currentWeatherData.getIconCode(), 100);
 
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            private WeatherData currentData;
-            private List<ForecastData> forecastData;
-            private boolean success = false;
+            JSONObject forecastDataJson = apiClient.getFiveDayForecast(cityName);
+            List<ForecastData> forecastList = JsonParser.parseFiveDayForecast(forecastDataJson);
+            updateForecastPanel(forecastList);
 
-            @Override
-            protected Void doInBackground() {
-                currentData = weatherApiClient.getWeatherData(city);
-                if (currentData != null) {
-                    forecastData = weatherApiClient.getForecastData(city);
-                    success = forecastData != null;
-                }
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                if (success) {
-                    updateUI(city, currentData, forecastData);
-                } else {
-                    // Handle city not found or other errors
-                    cityLabel.setText("City not found");
-                    tempLabel.setText("--°C");
-                    weatherDescLabel.setText(" ");
-                    windValueLabel.setText("-- km/h");
-                    humidityValueLabel.setText("--%");
-                    visibilityValueLabel.setText("-- km");
-                    weatherIcon.setIcon(null);
-                    forecastPanel.removeAll();
-                    forecastPanel.revalidate();
-                    forecastPanel.repaint();
-                }
-            }
-        };
-        worker.execute();
+        } else {
+            JOptionPane.showMessageDialog(this, "Could not find city '" + cityName + "'. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-    private void updateUI(String city, WeatherData data, List<ForecastData> forecastDataList) {
-        // Update current weather
-        cityLabel.setText(capitalize(city));
-        tempLabel.setText(String.format("%.0f°C", data.getTemperature()));
-        weatherDescLabel.setText(capitalize(data.getWeatherDescription()));
-        windValueLabel.setText(String.format("%.2f km/h", data.getWindSpeed()));
-        humidityValueLabel.setText(data.getHumidity() + "%");
-        visibilityValueLabel.setText((data.getVisibility() / 1000) + " km");
-        weatherIcon.setIcon(loadWeatherIcon(data.getIconCode()));
-
-        // Update forecast panel
+    private void updateForecastPanel(List<ForecastData> forecastList) {
         forecastPanel.removeAll();
-        for (ForecastData day : forecastDataList) {
-            forecastPanel.add(createForecastDayPanel(day));
+        for (ForecastData data : forecastList) {
+            JPanel dayPanel = new JPanel(new GridBagLayout());
+            dayPanel.setBackground(COMPONENT_COLOR);
+            dayPanel.setPreferredSize(new Dimension(110, 140)); // Increased width slightly for balance
+
+            GridBagConstraints dGbc = new GridBagConstraints();
+            dGbc.gridx = 0;
+            dGbc.anchor = GridBagConstraints.CENTER;
+
+            JLabel dayLabel = new JLabel(data.getDayOfWeek());
+            dayLabel.setFont(FONT_REGULAR_16);
+            dayLabel.setForeground(TEXT_COLOR);
+            dGbc.gridy = 0;
+            dGbc.insets = new Insets(10, 0, 0, 0);
+            dayPanel.add(dayLabel, dGbc);
+
+            JLabel iconLabel = new JLabel();
+            loadWeatherIcon(iconLabel, data.getIconCode(), 50);
+            dGbc.gridy = 1;
+            dGbc.insets = new Insets(5, 0, 5, 0);
+            dayPanel.add(iconLabel, dGbc);
+
+            JLabel tempLabel = new JLabel(String.format("%.0f°", data.getTemperature()));
+            tempLabel.setFont(FONT_BOLD_20);
+            tempLabel.setForeground(TEXT_COLOR);
+            dGbc.gridy = 2;
+            dGbc.insets = new Insets(0, 0, 10, 0);
+            dayPanel.add(tempLabel, dGbc);
+
+            forecastPanel.add(dayPanel);
         }
         forecastPanel.revalidate();
         forecastPanel.repaint();
     }
 
-    private JPanel createForecastDayPanel(ForecastData data) {
-        JPanel dayPanel = new JPanel();
-        dayPanel.setLayout(new BoxLayout(dayPanel, BoxLayout.Y_AXIS));
-        dayPanel.setBackground(COMPONENT_COLOR);
-        dayPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        JLabel dayLabel = new JLabel(data.getDayOfWeek());
-        dayLabel.setFont(BOLD_FONT);
-        dayLabel.setForeground(TEXT_COLOR);
-        dayLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel iconLabel = new JLabel(loadWeatherIcon(data.getIconCode(), 50, 50));
-        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel tempLabel = new JLabel(String.format("%.0f°", data.getTemperature()));
-        tempLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 22));
-        tempLabel.setForeground(TEXT_COLOR);
-        tempLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        dayPanel.add(dayLabel);
-        dayPanel.add(Box.createVerticalStrut(10)); // Spacer
-        dayPanel.add(iconLabel);
-        dayPanel.add(Box.createVerticalStrut(10)); // Spacer
-        dayPanel.add(tempLabel);
-
-        return dayPanel;
+    private String convertTimestampToTime(long timestamp) {
+        return Instant.ofEpochSecond(timestamp)
+                .atZone(ZoneId.systemDefault())
+                .toLocalTime()
+                .format(DateTimeFormatter.ofPattern("h:mm a"));
     }
 
-    private String capitalize(String text) {
-        // ... (no changes in this method) ...
-        if (text == null || text.isEmpty()) return text;
-        String[] words = text.split(" ");
-        StringBuilder capitalized = new StringBuilder();
-        for (String word : words) {
-            capitalized.append(Character.toUpperCase(word.charAt(0)))
-                    .append(word.substring(1).toLowerCase(Locale.ROOT))
-                    .append(" ");
-        }
-        return capitalized.toString().trim();
-    }
-
-    // Overloaded method for scaling forecast icons
-    private ImageIcon loadWeatherIcon(String iconCode, int width, int height) {
-        ImageIcon originalIcon = loadWeatherIcon(iconCode);
-        if (originalIcon != null) {
-            Image scaledImage = originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
-            return new ImageIcon(scaledImage);
-        }
-        return null;
-    }
-
-    private ImageIcon loadWeatherIcon(String iconCode) {
-        // ... (no changes in this method) ...
+    private void loadWeatherIcon(JLabel iconLabel, String iconCode, int size) {
         String path = "/assets/" + iconCode + ".png";
         try {
-            URL resourceUrl = getClass().getResource(path);
-            if (resourceUrl == null) {
-                System.err.println("Could not find icon file: " + path);
-                return null;
-            }
-            return new ImageIcon(resourceUrl);
+            ImageIcon icon = new ImageIcon(getClass().getResource(path));
+            Image scaledImage = icon.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
+            iconLabel.setIcon(new ImageIcon(scaledImage));
         } catch (Exception e) {
-            System.err.println("Error loading icon: " + path);
-            e.printStackTrace();
-            return null;
+            System.err.println("Could not find icon file: " + path);
         }
     }
 }
