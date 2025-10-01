@@ -34,7 +34,7 @@ public class WeatherAppGui extends JFrame {
     private static final Font FONT_BOLD_20 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 20f);
     private static final Font FONT_BOLD_60 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 60f);
     private static final Font FONT_REGULAR_22 = FontLoader.loadFont("/fonts/Montserrat-Regular.ttf", 22f);
-    private static final Font FONT_BOLD_30 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 30f);
+    private static final Font FONT_BOLD_30 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 20f);
 
     private final WeatherApiClient apiClient;
     private JLabel cityLabel, tempLabel, descriptionLabel, weatherIconLabel;
@@ -145,7 +145,7 @@ public class WeatherAppGui extends JFrame {
     private JPanel createCityPanel() {
         RoundedPanel cityPanel = new RoundedPanel(new FlowLayout(FlowLayout.LEFT, 15, 0), 20);
         cityPanel.setBackground(COMPONENT_COLOR);
-        cityPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
+        cityPanel.setBorder(new EmptyBorder(15, 4, 15, 20));
 
         JLabel locationIcon = new JLabel(new ImageIcon(getClass().getResource("/icons/location.png")));
         cityLabel = new JLabel("City Name");
