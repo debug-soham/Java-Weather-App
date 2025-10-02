@@ -1,29 +1,28 @@
 ### IntelliJ IDEA ###
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+# Ignore the .idea directory, which contains user-specific IDE settings.
+.idea/
 
-### Eclipse ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
+# Ignore the .iml file, which contains module-specific paths and settings.
+*.iml
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
 
-### VS Code ###
-.vscode/
+### Java Build Output ###
+# Ignore the 'out' folder where IntelliJ places compiled .class files.
+/out/
 
-### Mac OS ###
+# Ignore compiled class files directly, just in case.
+*.class
+
+
+### Operating System Files ###
+# Ignore macOS specific files
 .DS_Store
+
+# Ignore Windows thumbnail cache files
+Thumbs.db
+
+
+### Log Files ###
+# Ignore log files that might be generated during development
+*.log
+log/
