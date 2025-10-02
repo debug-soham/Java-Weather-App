@@ -9,6 +9,8 @@ import com.weatherapp.util.FontLoader;
 import org.json.simple.JSONObject;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
@@ -87,8 +89,8 @@ public class WeatherAppGui extends JFrame {
         // -- Bottom Content (Forecast and Recent Searches) --
         JPanel bottomPanel = createBottomPanel();
         gbc.gridy = 1;
-        gbc.weighty = 1.0;
-        gbc.anchor = GridBagConstraints.SOUTH;
+        // Removed weighty and changed anchor to pull the panel up
+        gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(25, 0, 0, 0);
         mainPanel.add(bottomPanel, gbc);
@@ -120,27 +122,43 @@ public class WeatherAppGui extends JFrame {
         JPanel rightColumn = createHighlightsPanel();
         topGbc.gridx = 1;
         topGbc.weightx = 0.35;
+        topGbc.fill = GridBagConstraints.BOTH; // Ensure it fills the cell
         topPanel.add(rightColumn, topGbc);
 
         return topPanel;
     }
 
     private JPanel createBottomPanel() {
-        JPanel bottomPanel = new JPanel(new GridLayout(1, 2, 20, 0));
+        // Switched to GridBagLayout for proportional sizing
+        JPanel bottomPanel = new JPanel(new GridBagLayout());
         bottomPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
 
         // Forecast Panel (now smaller)
         forecastPanel = new JPanel(new GridLayout(1, 5, 10, 0));
         forecastPanel.setOpaque(false);
-        forecastPanel.setBorder(BorderFactory.createTitledBorder(
-                new EmptyBorder(0,0,0,0), "5-Day Forecast", 0, 0, FONT_REGULAR_16, TEXT_COLOR
+        Border forecastTitleBorder = BorderFactory.createTitledBorder(
+                new EmptyBorder(0, 0, 0, 0), "5-Day Forecast", 0, 0, FONT_REGULAR_16, TEXT_COLOR
+        );
+        forecastPanel.setBorder(new CompoundBorder(
+                forecastTitleBorder,
+                new EmptyBorder(10, 0, 0, 0) // Add 10px top padding
         ));
 
         // Recent Searches Panel
         recentSearchesPanel = createRecentSearchesPanel();
 
-        bottomPanel.add(forecastPanel);
-        bottomPanel.add(recentSearchesPanel);
+        gbc.gridx = 0;
+        gbc.weightx = 0.65; // Forecast takes more space
+        gbc.insets = new Insets(0, 0, 0, 20);
+        bottomPanel.add(forecastPanel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0.35; // Recent searches takes less space
+        gbc.insets = new Insets(0, 0, 0, 0);
+        bottomPanel.add(recentSearchesPanel, gbc);
+
         return bottomPanel;
     }
 
@@ -148,8 +166,12 @@ public class WeatherAppGui extends JFrame {
         JPanel panel = new JPanel();
         panel.setOpaque(false);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createTitledBorder(
-                new EmptyBorder(0,0,0,0), "Recent Searches", 0, 0, FONT_REGULAR_16, TEXT_COLOR
+        Border recentTitleBorder = BorderFactory.createTitledBorder(
+                new EmptyBorder(0, 0, 0, 0), "Recent Searches", 0, 0, FONT_REGULAR_16, TEXT_COLOR
+        );
+        panel.setBorder(new CompoundBorder(
+                recentTitleBorder,
+                new EmptyBorder(10, 0, 0, 0) // Add 10px top padding
         ));
 
         recentCity1Name = new JLabel("--");
@@ -164,13 +186,16 @@ public class WeatherAppGui extends JFrame {
         recentCity2Icon = new JLabel();
         panel.add(createRecentCityItem(recentCity2Name, recentCity2Temp, recentCity2Icon));
 
+        panel.add(Box.createVerticalGlue()); // Pushes items to the top
+
         return panel;
     }
 
     private JPanel createRecentCityItem(JLabel cityNameLabel, JLabel tempLabel, JLabel iconLabel) {
         RoundedPanel itemPanel = new RoundedPanel(new GridBagLayout(), 20);
         itemPanel.setBackground(COMPONENT_COLOR);
-        itemPanel.setBorder(new EmptyBorder(5, 15, 5, 15));
+        // Increased vertical padding by increasing border size
+        itemPanel.setBorder(new EmptyBorder(10, 15, 10, 15));
 
         GridBagConstraints gbc = new GridBagConstraints();
 
@@ -433,7 +458,8 @@ public class WeatherAppGui extends JFrame {
         dayLabel.setFont(FONT_REGULAR_16); // Smaller font for day
         dayLabel.setForeground(TEXT_COLOR);
         gbc.gridy = 0;
-        gbc.insets = new Insets(10, 0, 0, 0);
+        // Increased vertical insets for more height
+        gbc.insets = new Insets(15, 0, 0, 0);
         dayPanel.add(dayLabel, gbc);
         JLabel iconLabel = new JLabel();
         loadWeatherIcon(iconLabel, data.getIconCode(), 50); // Smaller icon
@@ -444,7 +470,8 @@ public class WeatherAppGui extends JFrame {
         tempLabel.setFont(FONT_BOLD_20); // Smaller font for temp
         tempLabel.setForeground(TEXT_COLOR);
         gbc.gridy = 2;
-        gbc.insets = new Insets(0, 0, 10, 0);
+        // Increased vertical insets for more height
+        gbc.insets = new Insets(0, 0, 15, 0);
         dayPanel.add(tempLabel, gbc);
         return dayPanel;
     }
