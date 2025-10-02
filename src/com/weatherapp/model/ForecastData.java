@@ -1,17 +1,17 @@
 package com.weatherapp.model;
 
 /**
- * A data model class that holds weather information for a single day in the forecast.
+ * A simple data model class to hold the weather information for a single day in the forecast.
  */
 public class ForecastData {
     private final String dayOfWeek;
     private final double temperature;
-    private final String iconCode; // Changed from iconPath
+    private final String iconCode;
 
     public ForecastData(String dayOfWeek, double temperature, String iconCode) {
         this.dayOfWeek = dayOfWeek;
         this.temperature = temperature;
-        this.iconCode = iconCode; // Changed from iconPath
+        this.iconCode = iconCode;
     }
 
     public String getDayOfWeek() {
@@ -22,7 +22,6 @@ public class ForecastData {
         return temperature;
     }
 
-    // Renamed method from getIconPath() to getIconCode()
     public String getIconCode() {
         return iconCode;
     }

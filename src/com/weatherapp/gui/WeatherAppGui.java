@@ -3,6 +3,7 @@ package com.weatherapp.gui;
 import com.weatherapp.api.JsonParser;
 import com.weatherapp.api.WeatherApiClient;
 import com.weatherapp.gui.component.RoundedPanel;
+import com.weatherapp.model.ForecastData;
 import com.weatherapp.model.WeatherData;
 import com.weatherapp.util.FontLoader;
 import org.json.simple.JSONObject;
@@ -15,11 +16,11 @@ import java.awt.event.FocusEvent;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * The main graphical user interface for the Weather Information App.
  * This class meticulously replicates a high-fidelity design using advanced layout management.
- * Note: This version excludes the 5-day forecast to focus on the top-half design.
  */
 public class WeatherAppGui extends JFrame {
 
@@ -34,23 +35,24 @@ public class WeatherAppGui extends JFrame {
     private static final Font FONT_BOLD_20 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 20f);
     private static final Font FONT_BOLD_60 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 60f);
     private static final Font FONT_REGULAR_22 = FontLoader.loadFont("/fonts/Montserrat-Regular.ttf", 22f);
-    private static final Font FONT_BOLD_30 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 20f);
+    private static final Font FONT_BOLD_30 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 30f);
 
     private final WeatherApiClient apiClient;
     private JLabel cityLabel, tempLabel, descriptionLabel, weatherIconLabel;
     private JLabel windValueLabel, humidityValueLabel, sunriseValueLabel, sunsetValueLabel;
+    private JPanel forecastPanel; // Panel to hold the daily forecast items
 
     public WeatherAppGui() {
         this.apiClient = new WeatherApiClient();
         setTitle("Weather Information App");
-        setSize(950, 480); // Adjusted size for top-half only
+        setSize(950, 680); // Increased height to accommodate the forecast
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
         getContentPane().setBackground(BACKGROUND_COLOR);
 
         createUI();
-        updateWeatherData("Mumbai"); // Load default city as per design
+        updateWeatherData("Kalyan"); // Load default city as per design
     }
 
     private void createUI() {
@@ -61,53 +63,70 @@ public class WeatherAppGui extends JFrame {
 
         GridBagConstraints gbc = new GridBagConstraints();
 
-        // -- Search Bar Panel --
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2; // Span both columns
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(8, 16, 25, 16); // Bottom margin
-        mainPanel.add(createSearchPanel(), gbc);
+        // -- Top Content (Search, Main Weather, Highlights) --
+        JPanel topPanel = new JPanel(new GridBagLayout());
+        topPanel.setOpaque(false);
 
-        // -- Left Column Panels --
+        GridBagConstraints topGbc = new GridBagConstraints();
+
+        // Search Bar Panel
+        topGbc.gridx = 0;
+        topGbc.gridy = 0;
+        topGbc.gridwidth = 2;
+        topGbc.fill = GridBagConstraints.HORIZONTAL;
+        topGbc.insets = new Insets(0, 0, 25, 0);
+        topPanel.add(createSearchPanel(), topGbc);
+
+        // Left Column Panels
         JPanel leftColumn = new JPanel(new GridBagLayout());
         leftColumn.setOpaque(false);
         GridBagConstraints leftGbc = new GridBagConstraints();
-
-        // City Name Panel
-        leftGbc.gridy = 0;
         leftGbc.fill = GridBagConstraints.HORIZONTAL;
-        leftGbc.insets = new Insets(7, 0, 20, 0); // Bottom margin
+        leftGbc.insets = new Insets(0, 0, 20, 0);
         leftColumn.add(createCityPanel(), leftGbc);
-
-        // Current Weather Panel
         leftGbc.gridy = 1;
-        leftGbc.weighty = 1.0; // Take up remaining vertical space
+        leftGbc.weighty = 1.0;
         leftGbc.fill = GridBagConstraints.BOTH;
         leftColumn.add(createWeatherPanel(), leftGbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0.65; // Final Adjustment: Left column is wider
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(0, 7, 0, 10); // Right margin
-        mainPanel.add(leftColumn, gbc);
+        topGbc.gridx = 0;
+        topGbc.gridy = 1;
+        topGbc.gridwidth = 1;
+        topGbc.weightx = 0.65;
+        topGbc.fill = GridBagConstraints.BOTH;
+        topGbc.insets = new Insets(0, 0, 0, 20);
+        topPanel.add(leftColumn, topGbc);
 
-        // -- Right Column (Highlights) --
-        gbc.gridx = 1;
+        // Right Column (Highlights)
+        topGbc.gridx = 1;
+        topGbc.gridy = 1;
+        topGbc.weightx = 0.35;
+        topGbc.fill = GridBagConstraints.BOTH;
+        topGbc.insets = new Insets(0, 0, 0, 0);
+        topPanel.add(createHighlightsPanel(), topGbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.NORTH;
+        mainPanel.add(topPanel, gbc);
+
+        // -- Forecast Panel (Bottom) --
+        forecastPanel = new JPanel(new GridLayout(1, 5, 15, 0)); // Use GridLayout to fill width
+        forecastPanel.setOpaque(false);
+
         gbc.gridy = 1;
-        gbc.weightx = 0.35; // Final Adjustment: Right column is narrower
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(0, 0, 0, 13);
-        mainPanel.add(createHighlightsPanel(), gbc);
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.SOUTH;
+        gbc.fill = GridBagConstraints.HORIZONTAL; // Ensure it fills horizontally
+        gbc.insets = new Insets(25, 0, 0, 0);
+        mainPanel.add(forecastPanel, gbc);
     }
 
     private JPanel createSearchPanel() {
-        RoundedPanel searchPanel = new RoundedPanel(new BorderLayout(15, 0), 20);
+        RoundedPanel searchPanel = new RoundedPanel(new BorderLayout(10, 0), 20);
         searchPanel.setBackground(COMPONENT_COLOR);
-        searchPanel.setBorder(new EmptyBorder(8, 12, 8, 15));
+        searchPanel.setBorder(new EmptyBorder(5, 15, 5, 15));
 
         JLabel searchIcon = new JLabel(new ImageIcon(getClass().getResource("/icons/search.png")));
         searchPanel.add(searchIcon, BorderLayout.WEST);
@@ -145,7 +164,7 @@ public class WeatherAppGui extends JFrame {
     private JPanel createCityPanel() {
         RoundedPanel cityPanel = new RoundedPanel(new FlowLayout(FlowLayout.LEFT, 15, 0), 20);
         cityPanel.setBackground(COMPONENT_COLOR);
-        cityPanel.setBorder(new EmptyBorder(15, 4, 15, 20));
+        cityPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         JLabel locationIcon = new JLabel(new ImageIcon(getClass().getResource("/icons/location.png")));
         cityLabel = new JLabel("City Name");
@@ -183,13 +202,13 @@ public class WeatherAppGui extends JFrame {
         gbc.gridx = 0;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.weightx = 1.0;
+        gbc.insets = new Insets(0, 0, 0, 20); // Add gap between text and icon
         weatherPanel.add(textPanel, gbc);
 
         weatherIconLabel = new JLabel();
         gbc.gridx = 1;
         gbc.anchor = GridBagConstraints.EAST;
         gbc.weightx = 0;
-        gbc.insets = new Insets(0, 20, 0, 0); // Final Adjustment: Add gap between text and icon
         weatherPanel.add(weatherIconLabel, gbc);
 
         return weatherPanel;
@@ -273,20 +292,73 @@ public class WeatherAppGui extends JFrame {
         if (cityName.equalsIgnoreCase("Search your location") || cityName.trim().isEmpty()) {
             return;
         }
-        JSONObject dataJson = apiClient.getCurrentWeather(cityName);
-        WeatherData data = JsonParser.parseCurrentWeather(dataJson);
-        if (data != null) {
-            cityLabel.setText(data.getCityName());
-            tempLabel.setText(String.format("%.0f°C", data.getTemperature()));
-            descriptionLabel.setText(data.getDescription());
-            windValueLabel.setText(String.format("%.2f km/h", data.getWindSpeed()));
-            humidityValueLabel.setText(data.getHumidity() + " %");
-            sunriseValueLabel.setText(convertTimestampToTime(data.getSunrise()));
-            sunsetValueLabel.setText(convertTimestampToTime(data.getSunset()));
-            loadWeatherIcon(weatherIconLabel, data.getIconCode(), 120);
+        // Update current weather
+        JSONObject currentDataJson = apiClient.getCurrentWeather(cityName);
+        WeatherData currentData = JsonParser.parseCurrentWeather(currentDataJson);
+        if (currentData != null) {
+            cityLabel.setText(currentData.getCityName());
+            tempLabel.setText(String.format("%.0f°C", currentData.getTemperature()));
+            descriptionLabel.setText(currentData.getDescription());
+            windValueLabel.setText(String.format("%.2f km/h", currentData.getWindSpeed()));
+            humidityValueLabel.setText(currentData.getHumidity() + " %");
+            sunriseValueLabel.setText(convertTimestampToTime(currentData.getSunrise()));
+            sunsetValueLabel.setText(convertTimestampToTime(currentData.getSunset()));
+            loadWeatherIcon(weatherIconLabel, currentData.getIconCode(), 120);
+
+            // Update forecast
+            JSONObject forecastDataJson = apiClient.getFiveDayForecast(cityName);
+            List<ForecastData> forecastList = JsonParser.parseFiveDayForecast(forecastDataJson);
+            updateForecastPanel(forecastList);
+
         } else {
             JOptionPane.showMessageDialog(this, "Could not find city: " + cityName, "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void updateForecastPanel(List<ForecastData> forecastList) {
+        forecastPanel.removeAll();
+        if (forecastList == null || forecastList.isEmpty()) {
+            return;
+        }
+
+        for (ForecastData data : forecastList) {
+            forecastPanel.add(createForecastItem(data));
+        }
+
+        forecastPanel.revalidate();
+        forecastPanel.repaint();
+    }
+
+    private JPanel createForecastItem(ForecastData data) {
+        RoundedPanel dayPanel = new RoundedPanel(new GridBagLayout(), 20);
+        dayPanel.setBackground(COMPONENT_COLOR);
+        // setPreferredSize is removed to allow GridLayout to manage size
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.CENTER;
+
+        JLabel dayLabel = new JLabel(data.getDayOfWeek());
+        dayLabel.setFont(FONT_BOLD_20);
+        dayLabel.setForeground(TEXT_COLOR);
+        gbc.gridy = 0;
+        gbc.insets = new Insets(15, 0, 0, 0);
+        dayPanel.add(dayLabel, gbc);
+
+        JLabel iconLabel = new JLabel();
+        loadWeatherIcon(iconLabel, data.getIconCode(), 60);
+        gbc.gridy = 1;
+        gbc.insets = new Insets(10, 0, 10, 0);
+        dayPanel.add(iconLabel, gbc);
+
+        JLabel tempLabel = new JLabel(String.format("%.0f°", data.getTemperature()));
+        tempLabel.setFont(FONT_BOLD_20);
+        tempLabel.setForeground(TEXT_COLOR);
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 15, 0);
+        dayPanel.add(tempLabel, gbc);
+
+        return dayPanel;
     }
 
     private String convertTimestampToTime(long timestamp) {
@@ -300,6 +372,7 @@ public class WeatherAppGui extends JFrame {
             iconLabel.setIcon(new ImageIcon(icon.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH)));
         } catch (Exception e) {
             System.err.println("Could not find icon file: " + path);
+            iconLabel.setIcon(null); // Clear icon if not found
         }
     }
 }

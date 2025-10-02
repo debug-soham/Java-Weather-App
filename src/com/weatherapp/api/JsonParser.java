@@ -4,9 +4,9 @@ import com.weatherapp.model.ForecastData;
 import com.weatherapp.model.WeatherData;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -19,25 +19,16 @@ public class JsonParser {
         if (weatherDataJson == null) return null;
 
         try {
-            // Get the city name
             String cityName = (String) weatherDataJson.get("name");
-
-            // Get weather description and icon
             JSONArray weatherArray = (JSONArray) weatherDataJson.get("weather");
             JSONObject weather = (JSONObject) weatherArray.get(0);
             String description = (String) weather.get("description");
             String iconCode = (String) weather.get("icon");
-
-            // Get temperature
             JSONObject main = (JSONObject) weatherDataJson.get("main");
             double temperature = ((Number) main.get("temp")).doubleValue();
             int humidity = ((Number) main.get("humidity")).intValue();
-
-            // Get wind speed
             JSONObject wind = (JSONObject) weatherDataJson.get("wind");
             double windSpeed = ((Number) wind.get("speed")).doubleValue();
-
-            // Get sunrise and sunset
             JSONObject sys = (JSONObject) weatherDataJson.get("sys");
             long sunrise = (long) sys.get("sunrise");
             long sunset = (long) sys.get("sunset");
@@ -51,8 +42,37 @@ public class JsonParser {
     }
 
     public static List<ForecastData> parseFiveDayForecast(JSONObject forecastDataJson) {
-        // This method is not used by the current "pixel-perfect" GUI but is kept for completeness.
-        return new ArrayList<>();
+        if (forecastDataJson == null) return new ArrayList<>();
+
+        List<ForecastData> forecastList = new ArrayList<>();
+        JSONArray list = (JSONArray) forecastDataJson.get("list");
+
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
+        DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("EEE");
+
+        for (Object item : list) {
+            JSONObject forecast = (JSONObject) item;
+            long timestamp = (long) forecast.get("dt");
+            LocalDateTime forecastDateTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault());
+
+            // We only want one forecast per day, and not for today. Let's pick the one around noon.
+            if (!forecastDateTime.toLocalDate().isEqual(today) && forecastDateTime.getHour() >= 12) {
+                // Check if we already added a forecast for this day
+                boolean dayAlreadyAdded = forecastList.stream()
+                        .anyMatch(f -> f.getDayOfWeek().equals(forecastDateTime.format(dayFormatter)));
+
+                if (!dayAlreadyAdded && forecastList.size() < 5) {
+                    JSONObject main = (JSONObject) forecast.get("main");
+                    double temperature = ((Number) main.get("temp")).doubleValue();
+                    JSONArray weatherArray = (JSONArray) forecast.get("weather");
+                    JSONObject weather = (JSONObject) weatherArray.get(0);
+                    String iconCode = (String) weather.get("icon");
+
+                    forecastList.add(new ForecastData(forecastDateTime.format(dayFormatter), temperature, iconCode));
+                }
+            }
+        }
+        return forecastList;
     }
 }
 
