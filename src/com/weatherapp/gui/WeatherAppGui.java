@@ -28,10 +28,10 @@ import java.util.List;
 public class WeatherAppGui extends JFrame {
 
     // Define colors from the design
-    private static final Color BACKGROUND_COLOR = new Color(0x1C1C1E);
-    private static final Color COMPONENT_COLOR = new Color(0x2C2C2E);
-    private static final Color TEXT_COLOR = new Color(0xFFFFFF);
-    private static final Color PLACEHOLDER_TEXT_COLOR = new Color(0x8E8E93);
+    private static final Color BACKGROUND_COLOR = new Color(0x0D0F12); // Very Dark Blue
+    private static final Color COMPONENT_COLOR = new Color(0x1C1F27);  // Dark Slate Blue
+    private static final Color TEXT_COLOR = new Color(0xE2E8F0);      // Off-white/Light Gray
+    private static final Color PLACEHOLDER_TEXT_COLOR = new Color(0x718096); // Muted Slate
 
     // Declare fonts from the design
     private static final Font FONT_REGULAR_16 = FontLoader.loadFont("/fonts/Montserrat-Regular.ttf", 16f);
