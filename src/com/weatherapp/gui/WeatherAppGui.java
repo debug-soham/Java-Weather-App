@@ -55,7 +55,7 @@ public class WeatherAppGui extends JFrame {
     public WeatherAppGui() {
         this.apiClient = new WeatherApiClient();
         setTitle("Weather Information App");
-        setSize(950, 680);
+        setSize(950, 640);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
