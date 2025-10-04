@@ -2,7 +2,7 @@
 A modern, desktop weather application built with Java Swing. It fetches live weather data from the OpenWeatherMap API and displays it in a custom-designed, pixel-perfect UI.
 
 ## Final Application Preview
-<img width="1782" height="856" alt="image" src="https://github.com/user-attachments/assets/75ab71c5-068c-4966-93b1-0129f30ac513" />
+<img width="1919" height="1035" alt="image" src="https://github.com/user-attachments/assets/2491cf2c-8894-43fd-bd65-9e676570b1b2" />
 
 <br>
 <br>
