@@ -5,7 +5,6 @@ A modern, desktop weather application built with Java Swing. It fetches live wea
 <img width="1919" height="1035" alt="image" src="https://github.com/user-attachments/assets/2491cf2c-8894-43fd-bd65-9e676570b1b2" />
 
 <br>
-<br>
 
 ## Core Features
 - **Live Weather Data:** Search any city for real-time weather conditions.
