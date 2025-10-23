@@ -13,8 +13,6 @@ A modern, desktop weather application built with Java Swing. It fetches live wea
 - **Search History:** Displays the last two searched cities for quick reference.
 - **Custom Modern UI:** Features a dark midnight blue theme, rounded corners, custom fonts (`Montserrat`), and a pixel-perfect layout.
 
-<br>
-
 ## Design and Implementation
 This project was designed to meet and exceed the requirements of the course rubric:
 -   **Use of OOP Concepts:** Strong application of OOP principles, including custom classes (`WeatherApiClient`, `RoundedPanel`), encapsulation in data models, and polymorphism by extending Swing components.
@@ -22,8 +20,6 @@ This project was designed to meet and exceed the requirements of the course rubr
 -   **Use of Package Concept:** The project follows a modular design with code organized into distinct packages (`api`, `gui`, `model`, `util`) for maintainability.
 -   **Functionality & Output:** The application is fully functional, fetching and displaying live data correctly and handling errors gracefully with `try-catch` blocks and user dialogs.
 -   **Project Understanding:** The problem is clearly defined and the scope is realistic, resulting in a complete and polished application.
-
-<br>
 
 ## Project Structure
 ```
@@ -43,8 +39,6 @@ Java-Weather-App/
         ├── fonts/        # Custom font files
         └── icons/        # UI element icons
 ```
-
-<br>
 
 ## Quick Setup Guide
 
