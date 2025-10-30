@@ -41,12 +41,17 @@ public class JsonParser {
         }
     }
 
+    /**
+     * Parses the 5-day forecast JSON.
+     * This new, more robust logic finds the first available forecast for each of the next 5 days.
+     */
     public static List<ForecastData> parseFiveDayForecast(JSONObject forecastDataJson) {
         if (forecastDataJson == null) return new ArrayList<>();
 
         List<ForecastData> forecastList = new ArrayList<>();
-        JSONArray list = (JSONArray) forecastDataJson.get("list");
+        List<LocalDate> daysAdded = new ArrayList<>(); // Keep track of which days we've added
 
+        JSONArray list = (JSONArray) forecastDataJson.get("list");
         LocalDate today = LocalDate.now(ZoneId.systemDefault());
         DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("EEE");
 
@@ -54,25 +59,22 @@ public class JsonParser {
             JSONObject forecast = (JSONObject) item;
             long timestamp = (long) forecast.get("dt");
             LocalDateTime forecastDateTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault());
+            LocalDate forecastDate = forecastDateTime.toLocalDate();
 
-            // We only want one forecast per day, and not for today. Let's pick the one around noon.
-            if (!forecastDateTime.toLocalDate().isEqual(today) && forecastDateTime.getHour() >= 12) {
-                // Check if we already added a forecast for this day
-                boolean dayAlreadyAdded = forecastList.stream()
-                        .anyMatch(f -> f.getDayOfWeek().equals(forecastDateTime.format(dayFormatter)));
+            // We only want one forecast per day, and not for today.
+            if (!forecastDate.isEqual(today) && !daysAdded.contains(forecastDate) && forecastList.size() < 5) {
+                // This is the first entry we've found for this future day. Add it.
+                daysAdded.add(forecastDate);
 
-                if (!dayAlreadyAdded && forecastList.size() < 5) {
-                    JSONObject main = (JSONObject) forecast.get("main");
-                    double temperature = ((Number) main.get("temp")).doubleValue();
-                    JSONArray weatherArray = (JSONArray) forecast.get("weather");
-                    JSONObject weather = (JSONObject) weatherArray.get(0);
-                    String iconCode = (String) weather.get("icon");
+                JSONObject main = (JSONObject) forecast.get("main");
+                double temperature = ((Number) main.get("temp")).doubleValue();
+                JSONArray weatherArray = (JSONArray) forecast.get("weather");
+                JSONObject weather = (JSONObject) weatherArray.get(0);
+                String iconCode = (String) weather.get("icon");
 
-                    forecastList.add(new ForecastData(forecastDateTime.format(dayFormatter), temperature, iconCode));
-                }
+                forecastList.add(new ForecastData(forecastDateTime.format(dayFormatter), temperature, iconCode));
             }
         }
         return forecastList;
     }
 }
-
