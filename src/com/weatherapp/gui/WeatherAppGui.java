@@ -22,18 +22,19 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * The main graphical user interface for the Weather Information App.
- * This class meticulously replicates a high-fidelity design using advanced layout management.
+ * The main Graphical User Interface (GUI) for the Weather App.
+ * This class is responsible for building and managing all UI components,
+ * handling user input, and displaying weather data.
  */
 public class WeatherAppGui extends JFrame {
 
-    // Define colors from the design
+    // Define the application's color palette for a modern, dark theme.
     private static final Color BACKGROUND_COLOR = new Color(0x0D0F12); // Very Dark Blue
     private static final Color COMPONENT_COLOR = new Color(0x1C1F27);  // Dark Slate Blue
     private static final Color TEXT_COLOR = new Color(0xE2E8F0);      // Off-white/Light Gray
     private static final Color PLACEHOLDER_TEXT_COLOR = new Color(0x718096); // Muted Slate
 
-    // Declare fonts from the design
+    // Load custom fonts to be used throughout the application.
     private static final Font FONT_REGULAR_16 = FontLoader.loadFont("/fonts/Montserrat-Regular.ttf", 16f);
     private static final Font FONT_BOLD_20 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 20f);
     private static final Font FONT_BOLD_60 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 60f);
@@ -41,9 +42,9 @@ public class WeatherAppGui extends JFrame {
     private static final Font FONT_BOLD_30 = FontLoader.loadFont("/fonts/Montserrat-Bold.ttf", 30f);
 
     private final WeatherApiClient apiClient;
-    // Initialize the search history with default values
     private final LinkedList<String> searchHistory = new LinkedList<>(List.of("Mumbai", "Pune"));
 
+    // Declare all UI components that need to be updated with weather data.
     private JLabel cityLabel, tempLabel, descriptionLabel, weatherIconLabel;
     private JLabel windValueLabel, humidityValueLabel, sunriseValueLabel, sunsetValueLabel;
     private JPanel forecastPanel;
@@ -63,13 +64,15 @@ public class WeatherAppGui extends JFrame {
 
         createUI();
 
-        // Display the initial recent searches
+        // Load initial data on startup.
         updateRecentSearchesPanel();
-
-        // Load main weather data for a default city on startup
         updateWeatherData("Mumbai");
     }
 
+    /**
+     * Sets up the main structure of the UI using GridBagLayout for precise control.
+     * The layout is divided into a top search bar and two main columns below it.
+     */
     private void createUI() {
         JPanel mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBackground(BACKGROUND_COLOR);

@@ -13,12 +13,22 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A utility class to parse JSON responses from the OpenWeatherMap API
+ * and convert them into structured data model objects.
+ */
 public class JsonParser {
 
+    /**
+     * Parses the JSON object for current weather data.
+     * @param weatherDataJson The JSONObject containing current weather information.
+     * @return A WeatherData object, or null if parsing fails.
+     */
     public static WeatherData parseCurrentWeather(JSONObject weatherDataJson) {
         if (weatherDataJson == null) return null;
 
         try {
+            // Navigate the JSON structure to extract required data fields.
             String cityName = (String) weatherDataJson.get("name");
             JSONArray weatherArray = (JSONArray) weatherDataJson.get("weather");
             JSONObject weather = (JSONObject) weatherArray.get(0);
@@ -36,20 +46,24 @@ public class JsonParser {
             return new WeatherData(cityName, temperature, description, iconCode, windSpeed, humidity, sunrise, sunset);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(); // Log parsing errors.
             return null;
         }
     }
 
     /**
-     * Parses the 5-day forecast JSON.
-     * This new, more robust logic finds the first available forecast for each of the next 5 days.
+     * Parses the 5-day forecast JSON to extract one forecast entry per day.
+     * This robust logic ensures that exactly one forecast is chosen for each of the next 5 days,
+     * regardless of the time of day the request is made.
+     *
+     * @param forecastDataJson The JSONObject containing the 5-day forecast list.
+     * @return A list of ForecastData objects, one for each of the next 5 days.
      */
     public static List<ForecastData> parseFiveDayForecast(JSONObject forecastDataJson) {
         if (forecastDataJson == null) return new ArrayList<>();
 
         List<ForecastData> forecastList = new ArrayList<>();
-        List<LocalDate> daysAdded = new ArrayList<>(); // Keep track of which days we've added
+        List<LocalDate> daysAdded = new ArrayList<>(); // Track which days have been added to avoid duplicates.
 
         JSONArray list = (JSONArray) forecastDataJson.get("list");
         LocalDate today = LocalDate.now(ZoneId.systemDefault());
@@ -62,6 +76,7 @@ public class JsonParser {
             LocalDate forecastDate = forecastDateTime.toLocalDate();
 
             // We only want one forecast per day, and not for today.
+            // Check if we haven't already added a forecast for this day and if we still need more days.
             if (!forecastDate.isEqual(today) && !daysAdded.contains(forecastDate) && forecastList.size() < 5) {
                 // This is the first entry we've found for this future day. Add it.
                 daysAdded.add(forecastDate);

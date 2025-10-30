@@ -1,7 +1,8 @@
 package com.weatherapp.model;
 
 /**
- * A simple data model class to hold the weather information for a single day in the forecast.
+ * A data model class (POJO) that holds the essential weather information
+ * for a single day in the 5-day forecast.
  */
 public class ForecastData {
     private final String dayOfWeek;
@@ -14,16 +15,8 @@ public class ForecastData {
         this.iconCode = iconCode;
     }
 
-    public String getDayOfWeek() {
-        return dayOfWeek;
-    }
-
-    public double getTemperature() {
-        return temperature;
-    }
-
-    public String getIconCode() {
-        return iconCode;
-    }
+    // Getters for all private fields.
+    public String getDayOfWeek() { return dayOfWeek; }
+    public double getTemperature() { return temperature; }
+    public String getIconCode() { return iconCode; }
 }
-
