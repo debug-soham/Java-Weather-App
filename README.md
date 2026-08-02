@@ -63,3 +63,7 @@ Java-Weather-App/
     * `Build > Rebuild Project`.
     * Open `src/com/weatherapp/main/Main.java` and click the green play icon to run.
 
+## Team Members
+
+Soham Gore - https://github.com/debug-soham
+Rohaan Bhagat - https://github.com/Rohaan-altf4
