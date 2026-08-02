@@ -65,5 +65,5 @@ Java-Weather-App/
 
 ## Team Members
 
-Soham Gore - https://github.com/debug-soham <br>
+Soham Gore - https://github.com/debug-soham<br>
 Rohaan Bhagat - https://github.com/Rohaan-altf4
